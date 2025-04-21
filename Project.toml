@@ -2,7 +2,7 @@ name = "Dubins"
 uuid = "c4b27c1d-289f-5655-aa69-f096df7d9e2b"
 authors = ["Kaarthik Sundar <kaarthik01sundar@gmail.com>", "Devansh Agrawal <devansh@umich.edu>"]
 repo = "https://github.com/kaarthiksundar/Dubins.jl.git"
-version = "1.2.0"
+version = "1.2.1"
 
 [deps]
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
@@ -10,6 +10,7 @@ LoggingExtras = "e6f89c97-d47a-5376-807f-9c37f3926c36"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
+ForwardDiff = "1.0.1"
 Logging = "1.11.0"
 LoggingExtras = "~0.4, ~0.5, ~1"
 StaticArrays = "1.9.12"
@@ -18,6 +19,7 @@ julia = "^1"
 [extras]
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 
 [targets]
-test = ["Test", "StaticArrays"]
+test = ["Test", "StaticArrays", "ForwardDiff"]

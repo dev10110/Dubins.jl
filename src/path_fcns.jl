@@ -20,7 +20,12 @@ A configuration is given by ``[x, y, \\theta]``, where ``\\theta`` is in radians
 * ``\\rho``      - turning radius of the vehicle
 * return    - tuple (error code, dubins path). If error code != 0, then `nothing` is returned as the second argument
 """
-function dubins_shortest_path(q0::VF, q1::VF, ρ::F, loop_tol::F = 1e-5) where {F,VF<:AbstractVector{F}}
+function dubins_shortest_path(
+    q0::VF,
+    q1::VF,
+    ρ::F,
+    loop_tol::F = 1e-5,
+) where {F,VF<:AbstractVector{F}}
 
     # input checking
     @assert length(q0) == 3
@@ -71,7 +76,7 @@ function dubins_path(
     q1::VF,
     ρ::F,
     path_type::DubinsPathType,
-    loop_tol::F = 1e-5
+    loop_tol::F = 1e-5,
 ) where {F,VF<:AbstractVector{F}}
 
     # input checking
@@ -139,11 +144,7 @@ The three operators correspond to ``L``, ``R``, and ``S``
 
  * return    -  the image point as a 3-element vector
 """
-function dubins_segment(
-    t::F,
-    qi::VF,
-    segment_type::SegmentType,
-) where {F,VF<:AbstractVector{F}}
+function dubins_segment(t, qi, segment_type::SegmentType)
 
     st = sin(qi[3])
     ct = cos(qi[3])
@@ -152,17 +153,18 @@ function dubins_segment(
         qt1 = +sin(qi[3] + t) - st
         qt2 = -cos(qi[3] + t) + ct
         qt3 = t
-        qt = SVector{3,F}(qt1, qt2, qt3)
+        qt = SVector(qt1, qt2, qt3)
     elseif segment_type == R_SEG
         qt1 = -sin(qi[3] - t) + st
         qt2 = +cos(qi[3] - t) - ct
         qt3 = -t
-        qt = SVector{3,F}(qt1, qt2, qt3)
+        qt = SVector(qt1, qt2, qt3)
     elseif segment_type == S_SEG
         qt1 = ct * t
         qt2 = st * t
-        qt3 = 0.0
-        qt = SVector{3,F}(qt1, qt2, qt3)
+        qt3 = 0
+
+        qt = SVector(qt1, qt2, qt3)
     end
 
     return qt + qi # should return SVector even if qi is a Vector
@@ -175,7 +177,7 @@ Calculate the configuration along the path, using the parameter t
  * ``t``         - length measure where ``0 \\leq t <`` [`dubins_path_length`](@ref)(path)
  * return    - tuple containing non-zero error code if 't' is not in the correct range and the configuration result ``[x, y, \\theta]``
 """
-function dubins_path_sample(path::DubinsPath{F}, t::F; extrapolate = true) where {F}
+function dubins_path_sample(path::DubinsPath, t; extrapolate = true)
 
     # (t < 0 || t > dubins_path_length(path)) && (return EDUBPARAM, path.qi)
     (t < 0) && (return EDUBPARAM, path.qi)
@@ -185,7 +187,7 @@ function dubins_path_sample(path::DubinsPath{F}, t::F; extrapolate = true) where
     segment_types = DIRDATA[path.path_type]
 
     # initial configuration
-    qi = SVector{3,F}(0, 0, path.qi[3])
+    qi = SVector(0, 0, path.qi[3])
 
     # generate target configuration
     p1 = path.params[1]
@@ -214,7 +216,7 @@ function dubins_path_sample(path::DubinsPath{F}, t::F; extrapolate = true) where
     qs1 = q[1] * path.ρ + path.qi[1]
     qs2 = q[2] * path.ρ + path.qi[2]
     qs3 = mod2pi(q[3])
-    qs = SVector{3,F}(qs1, qs2, qs3)
+    qs = SVector(qs1, qs2, qs3)
 
     return EDUBOK, qs
 end
@@ -230,21 +232,17 @@ The sampling process continues until the whole path is sampled, or the callback 
 
  * return       - tuple (error code, configuration vector). If error code != 0, then `nothing` is returned as the second argument
  """
-function dubins_path_sample_many(path::DubinsPath{F}, step_size::F) where {F}
+function dubins_path_sample_many(path::DubinsPath{F}, step_size) where {F}
 
     configurations = SVector{3,F}[]
 
     L = dubins_path_length(path)
     (step_size < 0 || step_size > L) && (return EDUBPARAM, configurations)
 
-    x = zero(F)
-
-
-    while x < L
+    for x in range(0, L; step = step_size)
         errcode, q = dubins_path_sample(path, x)
-        push!(configurations, q)
         (errcode != 0) && (return errcode, configurations)
-        x += step_size
+        push!(configurations, q)
     end
 
     return EDUBOK, configurations
@@ -256,8 +254,7 @@ Convenience function to identify the endpoint of a path
  * path          - an initialized path
  * return        - tuple containing (zero on successful completion and the end configuration ``[x,y,\\theta]``)
 """
-dubins_path_endpoint(path::DubinsPath{F}) where {F} =
-    dubins_path_sample(path, dubins_path_length(path))
+dubins_path_endpoint(path::DubinsPath) = dubins_path_sample(path, dubins_path_length(path))
 
 """
 Convenience function to extract a sub-path
@@ -266,7 +263,7 @@ Convenience function to extract a sub-path
  * ``t``             - a length measure, where ``0 < t <`` [`dubins_path_length`](@ref)(path)
  * return        - zero on successful completion and the subpath
 """
-function dubins_extract_subpath(path::DubinsPath{F}, t::F) where {F}
+function dubins_extract_subpath(path::DubinsPath, t)
 
 
     ((t < 0) || (t > dubins_path_length(path))) && (return EDUBPARAM, path)
@@ -278,7 +275,7 @@ function dubins_extract_subpath(path::DubinsPath{F}, t::F) where {F}
     newpath_params1 = min(path.params[1], tprime)
     newpath_params2 = min(path.params[2], tprime - newpath_params1)
     newpath_params3 = min(path.params[3], tprime - newpath_params1 - newpath_params2)
-    newpath_params = SVector{3,F}(newpath_params1, newpath_params2, newpath_params3)
+    newpath_params = SVector(newpath_params1, newpath_params2, newpath_params3)
 
     # construct the new path (mostly copy old params)
     newpath = DubinsPath(path.qi, newpath_params, path.ρ, path.path_type)
@@ -295,7 +292,7 @@ The function to call the corresponding Dubins path based on the path_type
 function dubins_word(
     intermediate_results::DubinsIntermediateResults{F},
     path_type::DubinsPathType,
-    loop_tol::F
+    loop_tol,
 ) where {F}
 
     if path_type == LSL
@@ -316,11 +313,3 @@ function dubins_word(
 
     return result, out
 end
-
-# """
-# Reset tolerance value
-# """
-# function set_tolerance(ϵ::Float64)
-#     TOL = ϵ
-#     return
-# end

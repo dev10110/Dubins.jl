@@ -1,8 +1,5 @@
-export silence!, 
-    reset_logging_level!,
-    restore_global_logger!,
-    set_logging_level!
-    
+export silence!, reset_logging_level!, restore_global_logger!, set_logging_level!
+
 """
     _dubins_metafmt(level::Logging.LogLevel, _module, group, id, file, line)
 
@@ -11,10 +8,7 @@ MetaFormatter for ConsoleLogger for Dubins to adjust log message format
 function _dubins_metafmt(level::Logging.LogLevel, _module, group, id, file, line)
     @nospecialize
     color = Logging.default_logcolor(level)
-    prefix =
-        "$(_module) | " *
-        (level == Logging.Warn ? "Warning" : string(level)) *
-        " ] :"
+    prefix = "$(_module) | " * (level == Logging.Warn ? "Warning" : string(level)) * " ] :"
     suffix = ""
     Logging.Info <= level < Logging.Warn && return color, prefix, suffix
     _module !== nothing && (suffix *= "$(_module)")
@@ -67,11 +61,11 @@ end
 Sets the logging level for Dubins: :Info, :Warn, :Error, :Debug
 """
 function set_logging_level!(level::Symbol)
-    if level == :Debug 
-       Logging.global_logger(Logging.ConsoleLogger(stderr, Logging.Debug))
+    if level == :Debug
+        Logging.global_logger(Logging.ConsoleLogger(stderr, Logging.Debug))
     else
         Logging.global_logger(_make_filtered_logger(getfield(Logging, level)))
-    end 
+    end
 
     return
 end
